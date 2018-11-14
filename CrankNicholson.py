@@ -1,3 +1,5 @@
+# ------ 1D HEAT TRANSFER MODEL USING CRANK-NICHOLSON SCHEME. ACCOMODATES DIFFERENT BOUNDARY CONDITIONS -----------
+
 # Import python libraries
 import numpy as np
 import matplotlib.pyplot as plt
@@ -8,7 +10,6 @@ import sys
 # Import my own defined functions
 import verification_plotting as verplot
 
-# 1-D Heat Transfer Model. Uses Crank-Nicholson scheme
 
 # --- 1. Define material properties ---
 
@@ -47,7 +48,7 @@ ALUMINIUM = {"k": 0.167,  # kW/mK [Vermesi_PhD]
 
 sample_depth = 0.025          # meters
 space_mesh_divisions = 101    # (-)
-time_duration = 900           # seconds
+time_duration = 80           # seconds
 time_mesh_divisions = 1000    # (-)
 sample_material = "PMMA"      # PMMA, PA6, TIMBER, ALUMINIUM
 initial_temperature = 20      # C
@@ -226,10 +227,11 @@ def main_solver():
 
     # Plot final temperature gradient
     plot_tempgrad(Tn, x_grid, figure_size, x_lim_other, y_lim_other, "Final Temperature Gradient", "pdf", "not-show")
-    return Temperature
 
     # Plot verification plot if BC_surface = "const_temp", "const_nhf" or "convection" and B_back = "semi_inf"
-    verplot.verify_plot(Tn, x_lim_other, y_lim_other, time_duration, (BC_surface, BC_back))
+    verplot.verify_plot(Tn, x_grid, x_lim_other, y_lim_other, time_duration, (BC_surface, BC_back), BC_values, material)
+
+    return Temperature
 
 
 # --- Call the solver and evaluate results
