@@ -1,8 +1,12 @@
+# Import python libraries
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import os
 import sys
+
+# Import my own defined functions
+import verification_plotting as verplot
 
 # 1-D Heat Transfer Model. Uses Crank-Nicholson scheme
 
@@ -54,16 +58,16 @@ aluminium_depth = 0.02        # meters
 # --- 3. Define the boundary conditions ---
 
 
-BC_surface = "const_temp"         # "const_temp", "const_nhf", "convection", "conv_rad"
-BC_back = "semi_inf"      # "semi-inf" or "al_block"
+BC_surface = "const_temp"   # "const_temp", "const_nhf", "convection", "conv_rad"
+BC_back = "semi_inf"        # "semi-inf" or "al_block"
 
 # Surface BC 1: Constant surface temperature
 if BC_surface == "const_temp":
     t_surface = 200  # C
     if BC_back == "semi_inf":
-        BC_tuple = (t_surface, initial_temperature)
+        BC_values = (t_surface, initial_temperature)
     elif BC_back == "insulated":
-        BC_tuple = (t_surface, 0)
+        BC_values = (t_surface, 0)
     elif BC_back == "al_block":
         pass
 # Surface BC 2: Constant NHF
@@ -84,16 +88,16 @@ y_lim_other = [0, 550]
 # --- 5. Define the mesh and initial condition ---
 
 
-def define_mesh_icond(length_meters, length_divisions, time_domain, time_divisions, material, initial_temperature):
+def define_mesh_icond(sample_depth, space_mesh_division, time_duration, time_mesh_divisions, material, initial_temperature):
     """"
     Defines the grid, chooses material, initializes matrices.
 
     Returns space and time grids, material properties, T, Tn and sigma
     """
-    dx = length_meters / (length_divisions - 1)
-    dt = time_domain / (time_divisions - 1)
-    x_grid = np.array([i * dx for i in range(length_divisions)])
-    t_grid = np.array([n * dt for n in range(time_divisions)])
+    dx = sample_depth / (space_mesh_division - 1)
+    dt = time_duration / (time_mesh_divisions - 1)
+    x_grid = np.array([i * dx for i in range(space_mesh_division)])
+    t_grid = np.array([n * dt for n in range(time_mesh_divisions)])
 
     # Material
     material = material.upper()
@@ -107,7 +111,7 @@ def define_mesh_icond(length_meters, length_divisions, time_domain, time_divisio
     sigma = material["alpha"] * dt / (2 * dx**2)
 
     # Temperatures
-    T = np.zeros(length_divisions) + initial_temperature
+    T = np.zeros(space_mesh_division) + initial_temperature
     Tn = np.empty_like(T)
 
     return (x_grid, t_grid, dx, dt, material, T, Tn, sigma)
@@ -137,32 +141,33 @@ def plot_tempgrad(T, x_grid, figure_size, x_lim, y_lim, title, save_format, show
     if save_format == None:
         pass
     else:
-        fig.savefig(title + save_format, dpi=300)
+        title = title.replace(" ", "")
+        fig.savefig(title + "." + save_format, dpi=300)
 
     return None
 
 # --- 7. Define Matrix A ---
 
 
-def tridiag_matrix(sigma, length_divisions, BC_type):
+def tridiag_matrix(sigma, space_mesh_division, BC_tuple):
     """
     Creates tridiagonal matrix A
 
-    BC_type = (BC_type, BC_back)
+    BC_tuple = (BC_surface, BC_back)
 
-    BC_type: "const_temp", "const_nhf", "convection", "conv_rad"
+    BC_surface: "const_temp", "const_nhf", "convection", "conv_rad"
     BC_back: "semi_inf" or "al_block"
     """
 
-    A = np.diagflat([-sigma for i in range(length_divisions - 1)], -1) +\
-        np.diagflat([1 + 2 * sigma for i in range(length_divisions)]) +\
-        np.diagflat([-sigma for i in range(length_divisions - 1)], 1)
+    A = np.diagflat([-sigma for i in range(space_mesh_division - 1)], -1) +\
+        np.diagflat([1 + 2 * sigma for i in range(space_mesh_division)]) +\
+        np.diagflat([-sigma for i in range(space_mesh_division - 1)], 1)
 
     # Boundary conditions
-    if BC_type[0] == "const_temp":
+    if BC_tuple[0] == "const_temp":
         A[0, 0] = 1
         A[0, 1] = 0
-        if BC_type[1] == "semi_inf":
+        if BC_tuple[1] == "semi_inf":
             A[-1, -2] = 0
             A[-1, -1] = 1
     return A
@@ -170,30 +175,32 @@ def tridiag_matrix(sigma, length_divisions, BC_type):
 # --- 8. Define the vector b (Matrix B x T)
 
 
-def vector_b(sigma, length_divisions, T, BC_type, BC_tuple):
+def vector_b(sigma, space_mesh_division, T, BC_tuple, BC_values):
     """
     Calculates vector at the right hand side of the algebraic equation
 
-    BC_type = (BC_type, BC_back)
+    BC_tuple = (BC_surface, BC_back)
 
-    BC_type: "const_temp", "const_nhf", "convection", "conv_rad"
+    BC_surface: "const_temp", "const_nhf", "convection", "conv_rad"
     BC_back: "semi_inf" or "al_block"
     """
-    B = np.diagflat([sigma for i in range(length_divisions - 1)], -1) +\
-        np.diagflat([1 - 2 * sigma for i in range(length_divisions)]) +\
-        np.diagflat([sigma for i in range(length_divisions - 1)], 1)
+    B = np.diagflat([sigma for i in range(space_mesh_division - 1)], -1) +\
+        np.diagflat([1 - 2 * sigma for i in range(space_mesh_division)]) +\
+        np.diagflat([sigma for i in range(space_mesh_division - 1)], 1)
 
    # Calculate vector b
     b = B.dot(T)
 
     # Boundary conditions
-    if BC_type[0] == "const_temp":
-        b[0] = BC_tuple[0]
-        if BC_type[1] == "semi_inf":
-            b[-1] = BC_tuple[1]
+    if BC_tuple[0] == "const_temp":
+        b[0] = BC_values[0]
+        if BC_tuple[1] == "semi_inf":
+            b[-1] = BC_values[1]
+    elif BC_tuple[0] == "const_nhf":
+        pass
     return b
 
-# --- . Define the main function which calls all other functions define here
+# --- 10. Define the main function which calls all other functions defined here
 
 
 def main_solver():
@@ -205,20 +212,25 @@ def main_solver():
     Temperature.append(T)
 
     # Plot the initial condition
-    plot_tempgrad(T, x_grid, figure_size, x_lim_inicond, y_lim_inicond, "Initial condition", None, "not-show")
+    plot_tempgrad(T, x_grid, figure_size, x_lim_inicond, y_lim_inicond, "Initial condition", "pdf", "not-show")
 
     # Define matrix A (CN discretization + Boundary conditions)
     A = tridiag_matrix(sigma, space_mesh_divisions, (BC_surface, BC_back))
 
     # Define the vector b (B x T)
-    for _ in range(1000):
-        b = vector_b(sigma, space_mesh_divisions, T, (BC_surface, BC_back), BC_tuple)
+    for _ in range(time_duration):
+        b = vector_b(sigma, space_mesh_divisions, T, (BC_surface, BC_back), BC_values)
         Tn = np.linalg.solve(A, b)
         Temperature.append(Tn)
         T = Tn.copy()
+
+    # Plot final temperature gradient
+    plot_tempgrad(Tn, x_grid, figure_size, x_lim_other, y_lim_other, "Final Temperature Gradient", "pdf", "not-show")
     return Temperature
+
+    # Plot verification plot if BC_surface = "const_temp", "const_nhf" or "convection" and B_back = "semi_inf"
+    verplot.verify_plot(Tn, x_lim_other, y_lim_other, time_duration, (BC_surface, BC_back))
 
 
 # --- Call the solver and evaluate results
 Temperature = main_solver()
-print(Temperature)
