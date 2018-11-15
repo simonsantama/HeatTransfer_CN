@@ -19,7 +19,7 @@ import material_properties as mtp
 
 sample_depth = 0.025          # meters
 space_mesh_divisions = 101    # (-)
-time_duration = 100           # seconds
+time_duration = 200           # seconds
 time_mesh_divisions = 1000    # (-)
 sample_material = "PMMA"      # PMMA, PA6, TIMBER, ALUMINIUM
 initial_temperature = 20      # C
@@ -35,7 +35,7 @@ y_lim_other = [0, 550]
 
 # --- DEFINE THE BOUNDARY CONDITIONS
 
-BC_surface = "const_nhf"   # "const_temp", "const_nhf", "convection", "conv_rad"
+BC_surface = "const_nhf"    # "const_temp", "const_nhf", "convection", "conv_rad"
 BC_back = "semi_inf"        # "semi-inf" or "al_block"
 surface_temperature = 200   # Define the surface temperature in C
 surface_nhf = 20            # Define surface nhf in kW/m2
@@ -53,14 +53,14 @@ def main_solver():
     Temperature.append(T)
 
     # 3. Plot the initial condition
-    # plot_tempgrad(T, x_grid, figure_size, x_lim_inicond, y_lim_inicond, "Initial condition", "pdf", "not-show")
+    # myplot.plot_tempgrad(T, x_grid, figure_size, x_lim_inicond, y_lim_inicond, "Initial condition", None, "not-show")
 
     # 4. Define matrix A
     A = mymatrix.tridiag_matrix(sigma, space_mesh_divisions, (BC_surface, BC_back))
 
     # 5. Iterate to calculate T(x) for every time
     for _ in t_grid:
-        b = mymatrix.vector_b(sigma, space_mesh_divisions, T, (BC_surface, BC_back), BC_values[BC_surface])
+        b = mymatrix.vector_b(sigma, space_mesh_divisions, T, (BC_surface, BC_back), BC_values[BC_surface], dx, material)
         Tn = np.linalg.solve(A, b)
         Temperature.append(Tn)
         T = Tn.copy()

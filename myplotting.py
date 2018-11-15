@@ -26,7 +26,7 @@ def verify_plot(Tn, x_grid, x_lim_other, y_lim_other, time_duration, BC_tuple, B
         analytical_sol = BC_values[1] +\
             (2 * BC_values[0] * np.sqrt(material["alpha"] * time_duration / np.pi) / material["k"]) *\
             np.exp((-x_grid ** 2) / (4 * material["alpha"] * time_duration)) -\
-            (BC_values[0] * x_grid / material["k"]) * special.erf(x_grid / (2 * np.sqrt(material["alpha"] * time_duration)))
+            (BC_values[0] * x_grid / material["k"]) * special.erfc(x_grid / (2 * np.sqrt(material["alpha"] * time_duration)))
         title = "ConstantNHF_SemiInf_"
 
     elif BC_tuple[0] == "convection" and BC_tuple[1] == "semi_inf":
