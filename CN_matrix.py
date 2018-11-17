@@ -6,7 +6,7 @@ np.set_printoptions(precision=3)
 # --- Define tridiagonal matrix A
 
 
-def tridiag_matrix(sigma, space_mesh_division, BC_tuple, BC_values, material, dx):
+def tridiag_matrix(sigma, space_mesh_division, BC_tuple, BC_values, material, dx, T):
     """
     Creates tridiagonal matrix A
 
@@ -34,8 +34,8 @@ def tridiag_matrix(sigma, space_mesh_division, BC_tuple, BC_values, material, dx
             A[-1, -2] = 0
             A[-1, -1] = 1
 
-    h_convective = BC_values[0]
     if BC_tuple[0] == "convection":
+        h_convective = BC_values[0]
         A[0, 0] = 1 + 2 * sigma + (2 * dx * h_convective * sigma) / (material["k"])
         A[0, 1] = -2 * sigma
         if BC_tuple[1] == "semi_inf":
@@ -44,7 +44,15 @@ def tridiag_matrix(sigma, space_mesh_division, BC_tuple, BC_values, material, dx
 
     # Boundary condition 4: convection + radiation
     if BC_tuple[0] == "conv_rad":
-        pass
+        A[0, 0] = 1 + 2 * sigma + (dx * sigma * h_convective / material["k"]) + (8 * material["emissivity"] * sigma * stefan_boltzman * dx * T[0]**3 / material["k"])
+        A[0, 1] = -2 * sigma
+        if BC_tuple[1] == "semi_inf":
+            A[-1, -2] = 0
+            A[-1, -1] = 1
+        elif BC_tuple[1] == "insulated":
+            pass
+        elif BC_tuple[1] == "al_block":
+            pass
 
     return A
 
@@ -85,5 +93,14 @@ def vector_b(sigma, space_mesh_division, T, BC_tuple, BC_values, dx, material):
         b[-1] = initial_temperature
 
     # Boundary condition 4: convection + radiation
+    h_convective, initial_temperature, air_temperature, q_incident = BC_values
+    if BC_tuple[0] == "conv_rad":
+        b[0] = 0
+        if BC_tuple[1] == "semi_inf":
+            b[-1] = initial_temperature
+        elif BC_tuple[1] == "insulated":
+            pass
+        elif BC_tuple[1] == "al_block":
+            pass
 
     return b
