@@ -17,20 +17,22 @@ def verify_plot(Tn, x_grid, x_lim_other, y_lim_other, time_duration, BC_tuple, B
     Plots the analytical and numerical solution to verify the model at time = t_end
     """
     if BC_tuple[0] == "const_temp" and BC_tuple[1] == "semi_inf":
-        # BC_values[0] = surface temperature and BC_values[1] = intial temperature
-        analytical_sol = BC_values[0] + (BC_values[1] - BC_values[0]) * special.erf(x_grid / (2 * np.sqrt(material["alpha"] * time_duration)))
+        surface_temperature, initial_temperature = BC_values
+        analytical_sol = surface_temperature + (initial_temperature - surface_temperature) * special.erf(x_grid / (2 * np.sqrt(material["alpha"] * time_duration)))
         title = "ConstantTemp_SemiInf_"
 
     elif BC_tuple[0] == "const_nhf" and BC_tuple[1] == "semi_inf":
-        # BC_values[0] = surface nhf and BC_values[1] = initial temperature
-        analytical_sol = BC_values[1] +\
-            (2 * BC_values[0] * np.sqrt(material["alpha"] * time_duration / np.pi) / material["k"]) *\
+        surface_nhf, initial_temperature = BC_values
+        analytical_sol = initial_temperature +\
+            (2 * surface_nhf * np.sqrt(material["alpha"] * time_duration / np.pi) / material["k"]) *\
             np.exp((-x_grid ** 2) / (4 * material["alpha"] * time_duration)) -\
-            (BC_values[0] * x_grid / material["k"]) * special.erfc(x_grid / (2 * np.sqrt(material["alpha"] * time_duration)))
+            (surface_nhf * x_grid / material["k"]) * special.erfc(x_grid / (2 * np.sqrt(material["alpha"] * time_duration)))
         title = "ConstantNHF_SemiInf_"
 
     elif BC_tuple[0] == "convection" and BC_tuple[1] == "semi_inf":
-        pass
+        h_convective, initial_temperature, air_temperature = BC_values
+        analytical_sol = initial_temperature + (air_temperature - initial_temperature) * (special.erfc(x_grid / (2 * np.sqrt(material["alpha"] * time_duration))) - np.exp((h_convective * x_grid / material["k"]) + (h_convective**2 * material["alpha"] * time_duration / material["k"]**2)) * special.erfc((x_grid / (2 * np.sqrt(material["alpha"] * time_duration))) + (h_convective * np.sqrt(material["alpha"] * time_duration) / material["k"])))
+        title = "Convection_SemiInf_"
 
     fig = plt.figure()
     plt.scatter(x_grid, Tn, s=80, c="k", marker="o", alpha=0.5, label="C-N Model")
