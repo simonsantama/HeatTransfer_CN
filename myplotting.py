@@ -33,6 +33,8 @@ def verify_plot(Tn, x_grid, x_lim_other, y_lim_other, time_duration, BC_tuple, B
         h_convective, initial_temperature, air_temperature = BC_values
         analytical_sol = initial_temperature + (air_temperature - initial_temperature) * (special.erfc(x_grid / (2 * np.sqrt(material["alpha"] * time_duration))) - np.exp((h_convective * x_grid / material["k"]) + (h_convective**2 * material["alpha"] * time_duration / material["k"]**2)) * special.erfc((x_grid / (2 * np.sqrt(material["alpha"] * time_duration))) + (h_convective * np.sqrt(material["alpha"] * time_duration) / material["k"])))
         title = "Convection_SemiInf_"
+    else:
+        return None
 
     fig = plt.figure()
     plt.scatter(x_grid, Tn, s=80, c="k", marker="o", alpha=0.5, label="C-N Model")
@@ -54,7 +56,7 @@ def plot_tempgrad(T, x_grid, figure_size, x_lim, y_lim, title, save_format, show
     Save format = None for no saving
     """
     fig, ax = plt.subplots(figsize=figure_size)
-    ax.plot(x_grid, T, linewidth=2.5)
+    ax.plot(x_grid, T - 273, linewidth=2.5)
     ax.set_xlim(x_lim)
     ax.set_ylim(y_lim)
     ax.set_xlabel("Depth [m]")

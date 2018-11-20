@@ -1,12 +1,14 @@
 # ------- CREATES THE MATRICES FOR THE CRANK-NICHOLSON SCHEME AND OUTPUTS THE TEMPERATURE AT EVERY TIME STEP -----
 
 import numpy as np
+import pdb
 np.set_printoptions(precision=3)
 
 # --- Define tridiagonal matrix A
+stefan_boltzman = 5.67 * 10**-11  # kW/m2K4
 
 
-def tridiag_matrix(sigma, space_mesh_division, BC_tuple, BC_values, material, dx, T):
+def tridiag_matrix(sigma, space_mesh_division, BC_tuple, BC_values, material, dx, T, solving_method):
     """
     Creates tridiagonal matrix A
 
@@ -36,7 +38,11 @@ def tridiag_matrix(sigma, space_mesh_division, BC_tuple, BC_values, material, dx
 
     if BC_tuple[0] == "convection":
         h_convective = BC_values[0]
-        A[0, 0] = 1 + 2 * sigma + (2 * dx * h_convective * sigma) / (material["k"])
+        A[0, 0] = (
+            1 + 2 * sigma +
+            dx * sigma * h_convective / material["k"] +
+            4 * material["emissivity"] * stefan_boltzman * T[0]**3
+        )
         A[0, 1] = -2 * sigma
         if BC_tuple[1] == "semi_inf":
             A[-1, -2] = 0
@@ -44,8 +50,22 @@ def tridiag_matrix(sigma, space_mesh_division, BC_tuple, BC_values, material, dx
 
     # Boundary condition 4: convection + radiation
     if BC_tuple[0] == "conv_rad":
-        A[0, 0] = 1 + 2 * sigma + (dx * sigma * h_convective / material["k"]) + (8 * material["emissivity"] * sigma * stefan_boltzman * dx * T[0]**3 / material["k"])
-        A[0, 1] = -2 * sigma
+        h_convective, initial_temperature, air_temperature, q_incident = BC_values
+
+        CONST_A = 2 * dx / material["k"]
+
+        if solving_method == "n+1_based":
+
+            # --- Radiation at n+1 is calculated using taylor expansion as a function of T at n (FDS Technical guide)
+            A[0, 0] = 1 + 2 * sigma + CONST_A * sigma * (h_convective + 4 * material["emissivity"] * stefan_boltzman * T[0]**3)
+            A[0, 1] = - 2 * sigma
+
+        if solving_method == "n_based":
+
+            # --- Radiation at n+1 is calculated as a function of T at n
+            A[0, 0] = 1 + 2 * sigma + sigma * CONST_A * h_convective
+            A[0, 1] = - 2 * sigma
+
         if BC_tuple[1] == "semi_inf":
             A[-1, -2] = 0
             A[-1, -1] = 1
@@ -53,13 +73,13 @@ def tridiag_matrix(sigma, space_mesh_division, BC_tuple, BC_values, material, dx
             pass
         elif BC_tuple[1] == "al_block":
             pass
-
     return A
+
 
 # --- Define b_vector
 
 
-def vector_b(sigma, space_mesh_division, T, BC_tuple, BC_values, dx, material):
+def vector_b(sigma, space_mesh_division, T, BC_tuple, BC_values, dx, material, i, solving_method):
     """
     Calculates vector at the right hand side of the algebraic equation
 
@@ -94,13 +114,27 @@ def vector_b(sigma, space_mesh_division, T, BC_tuple, BC_values, dx, material):
 
     # Boundary condition 4: convection + radiation
     h_convective, initial_temperature, air_temperature, q_incident = BC_values
+
     if BC_tuple[0] == "conv_rad":
-        b[0] = 0
+
+        CONST_A = 2 * dx / material["k"]
+
+        if solving_method == "n+1_based":
+
+            # --- Radiation at n+1 is calculated using taylor expansion as a function of T at n (FDS Technical guide)
+
+            b[0] = 2 * sigma * T[1] + (1 - 2 * sigma - sigma * CONST_A * h_convective) * T[0] + h_convective * CONST_A * (q_incident[i + 1] + q_incident[i]) + 2 * sigma * CONST_A * h_convective * air_temperature + 2 * CONST_A * sigma * material["emissivity"] * stefan_boltzman * T[0]**4
+
+        if solving_method == "n_based":
+
+            # --- Radiation at n+1 is calculated as a function of T at n
+            b[0] = 2 * sigma * T[1] + (1 - 2 * sigma - sigma * CONST_A * h_convective) * T[0] + sigma * CONST_A * (q_incident[i + 1] + q_incident[i]) + 2 * sigma * CONST_A * h_convective * air_temperature - 2 * sigma * CONST_A * material["emissivity"] * stefan_boltzman * T[0]**4
+
         if BC_tuple[1] == "semi_inf":
             b[-1] = initial_temperature
         elif BC_tuple[1] == "insulated":
-            pass
+            b[-1] = b[-2]
         elif BC_tuple[1] == "al_block":
             pass
 
-    return b
+        return b
