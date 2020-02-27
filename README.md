@@ -1,5 +1,12 @@
 # HeatTransfer_CN
-Crank-Nicholson solver for a 1-D heat transfer model. Accomodates different boundary conditions.
+Crank-Nicholson solver for a 1-D heat transfer model.
 
-Accepts constant surface temperature, constant NHF, convection and convection + radiation as surface boundary conditions.
-Accepts semi-infinite, insulated or contact with aluminium block for back face boundary condition.
+1. Folder Test_Validation:
+
+Accepts constant surface temperature, constant NHF, convection and convection + radiaiton as surface
+boundary conditions (validated against the analytical solutions).
+
+2. Folder Thesis_Implementation:
+Uses the CN_model to predict the thermal response of PMMA, PA6 and Timber. This is used to understand the 
+evolution of the heat losses (surface and back) as a function of the imposed boundary condition.
+
