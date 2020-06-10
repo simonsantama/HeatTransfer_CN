@@ -1,12 +1,13 @@
 # HeatTransfer_CN
 Crank-Nicholson solver for a 1-D heat transfer model.
+Constant properties, homogenous and inert solid.
 
-1. Folder Test_Validation:
+1. Folder test_validation:
 
-Accepts constant surface temperature, constant NHF, convection and convection + radiaiton as surface
-boundary conditions (validated against the analytical solutions).
+Heat diffusion in a semi-infinite solid with Dirichlet, Neunman and Robin boundary conditions validated against the analytical
+solutions.
 
-2. Folder Thesis_Implementation:
-Uses the CN_model to predict the thermal response of PMMA, PA6 and Timber. This is used to understand the 
-evolution of the heat losses (surface and back) as a function of the imposed boundary condition.
+2. Folder implementation_thesis:
+Uses the Crank-Nicolson scheme to predict the inert, thermal response of PMMA, PA6 and Timber exposed to complex boundary
+conditions in the front and back surfaces.
 
