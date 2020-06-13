@@ -2,6 +2,8 @@
 This script uses the CN scheme to numerically solve the heat diffusion equation and compares the results to analytical
 solutions for three different boundary conditions.
 
+Analytical solutions are taken from Fundamentals of Heat and Mass Transfer (Incropera, Dewitt)
+
 It assumes a 1 dimensional, semi-infinite, inert and homogenous solid with constant properties.
 """
 
@@ -18,26 +20,24 @@ T_analytical = {}
 T_numerical = {}
 
 # parameters for the calculations
-T_initial = 300         # K
-T_air = T_initial       # K
-time_total = 601        # s
-sample_length = 0.1    # m
-space_divisions = 1000  # -
+T_initial = 300          # K
+T_air = T_initial        # K
+time_total = 901         # s
+sample_length = 0.2      # m
+space_divisions = 1000   # -
 
 alpha = 1e-6            # m2/s - random value (close to PMMA)
-k = 2e-1             # W/mK - random value (close to PMMA)
+k = 2e-1                # W/mK - random value (close to PMMA)
 
-# create mesh for the numerical solution
+# create mesh (space) for the numerical solution
 dx = sample_length / (space_divisions - 1)
 x_grid = np.array([i * dx for i in range(space_divisions)])
 
 # iterate over the three different boundary conditions
 for bc in boundary_conditions:
     
-    # analytical solutions as given by Fundamentals of Heat and Mass Transfer (Incropera, Dewitt)
     print(f"Calculating for {bc} boundary condition")        
         
-    
     if bc == "Dirichlet":
         
         # store temperature profiles for this boundary condition
@@ -67,15 +67,16 @@ for bc in boundary_conditions:
         T_analytical[bc] = {}
         T_numerical[bc] = {}
         
-        # constant surface heat flux of q = 40 kW/m2
+        # constant surface heat flux of q = 5 kW/m2
         q = 5000
         
         # iterate over each time step to calculate and store the analytical and numerical temperatures
         for t in range(1,time_total):
                     
             # calculate the analytical solution for the temperature profile
-            T_ansol = T_initial + (2*q/k)*np.sqrt(alpha*t/np.pi)*np.exp(-x_grid**2/(4 * alpha * t)) - (
-                    (q*x_grid/k)*special.erfc(x_grid/(2 * np.sqrt(alpha * t))))
+            T_ansol = T_initial + \
+                    (2*q/k)*np.sqrt(alpha*t/np.pi)*np.exp(-x_grid**2/(4 * alpha * t)) - \
+                    (q*x_grid/k)*special.erfc(x_grid/(2 * np.sqrt(alpha * t)))
             # save temperature data into the analytical temperature
             T_analytical[bc][t] = T_ansol
 
@@ -90,8 +91,8 @@ for bc in boundary_conditions:
         T_analytical[bc] = {}
         T_numerical[bc] = {}
         
-        # surface convection with a convective heat transfer coefficient of 10 W/m2K to gas at 800 K
-        h = 10               # W/m2K
+        # surface convection with a convective heat transfer coefficient of 50 W/m2K and a gas temperature of 800 K
+        h = 50               # W/m2K
         T_infinity = 800     # K
         
         # iterate over each time step to calculate and store the analytical and numerical temperatures
@@ -99,9 +100,11 @@ for bc in boundary_conditions:
                     
             # calculate the analytical solution for the temperature profile
             T_ansol = T_initial + \
-                (T_infinity - T_initial)*special.erfc(x_grid/(2*np.sqrt(alpha*t))) - \
-                np.exp(h*x_grid/k + h**2*alpha*t/k**2)* \
-                special.erfc(0)
+                    (T_infinity - T_initial)*(\
+                    special.erfc(x_grid/(2*np.sqrt(alpha*t))) - \
+                    np.exp(h*x_grid/k + h**2*alpha*t/k**2)*special.erfc(x_grid/(2*np.sqrt(alpha*t)) + h*np.sqrt(alpha*t)/k) \
+                    )
+
             # save temperature data into the analytical temperature
             T_analytical[bc][t] = T_ansol
             
