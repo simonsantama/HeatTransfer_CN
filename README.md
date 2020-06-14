@@ -2,6 +2,8 @@
 Crank-Nicholson solver for a 1-D heat transfer model.
 Constant properties, homogenous and inert solid.
 
+Not particularly efficient, but gets the job done.
+
 1. Folder test_validation:
 
 Heat diffusion in a semi-infinite solid with Dirichlet, Neunman and Robin boundary conditions validated against the analytical
