@@ -31,25 +31,48 @@ boundary_conditions_back = ["Semi-infinite", "Aluminium_block"]
 Temperatures = {}
 
 # parameters for the calculations
-T_initial = 288          # K
-T_air = T_initial        # K
-time_total = 901         # s
-sample_length = 0.2      # m
-space_divisions = 1000   # -
-#
-#alpha = 1e-6            # m2/s - random value (close to PMMA)
-#k = 2e-1                # W/mK - random value (close to PMMA)
-#
-## create mesh (space) for the numerical solution
-#dx = sample_length / (space_divisions - 1)
-#x_grid = np.array([i * dx for i in range(space_divisions)])
-#
-## define dt according to Von Neunman stability analysis
-#dt = (1 / 3) * (dx**2 / alpha)
-#time_divisions = time_total / dt
-#t_grid = np.array([n * dt for n in range(int(time_divisions))])
-#
-#upsilon = (alpha*dt)/(2*dx**2)
+T_initial = 288                      # K
+T_air = T_initial                    # K
+time_total = 901                     # s
+sample_length = 0.025                # m
+space_divisions = 100                # -
+
+# define a range of properties to be used to evaluate the response of the material (these are syntethic properties)
+k = np.linspace(0.2, 0.5, 7)           # W/mK
+alpha = np.linspace(1e-7, 1.2e-6, 7)   # J/kgK
+
+# create spatial mesh
+dx = sample_length/(space_divisions - 1)
+x_grid = np.array([i * dx for i in range(space_divisions)])
+
+# define time step based on the spatial mesh for each alpha and create mesh
+dt_all = (1 / 3) * (dx**2 / alpha)
+time_divisions = time_total / dt_all
+t_grid = []
+for i,dt in enumerate(dt_all):
+    t_grid.append(np.array([n * dt for n in range(int(time_divisions[i]))]))
+    
+upsilon = (alpha*dt)/(2*dx**2)
+    
+# iterate over surface boundary conditions
+for bc_surface in boundary_conditions_surface:
+    
+    print(f"-- Surface boundary condition {bc_surface} --")
+    Temperatures[bc_surface] = {}
+    
+    # iterate over back boundary conditions
+    for bc_back in boundary_conditions_back:
+        
+        print(f" -Back boundary condition {bc_back}-")
+        Temperatures[bc_surface][bc_back] = {}
+        
+        
+
+
+
+
+
+
 #
 ## iterate over the three different boundary conditions
 #for bc in boundary_conditions:
