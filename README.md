@@ -10,6 +10,9 @@ Heat diffusion in a semi-infinite solid with Dirichlet, Neunman and Robin bounda
 solutions.
 
 2. Folder implementation:
-Uses the Crank-Nicolson scheme to predict the inert, thermal response of PMMA, PA6 and Timber exposed to external radiation (function of time) with convective and radiative
-losses at the exposed surface and conductive losses to an aluminium block on the back surface.
+Uses the Crank-Nicolson scheme to predict the inert response of a one dimensional solid to different boundary conditions for a range of scenarios, including:
+1) Different convective heat transfer coefficients
+2) Different thermal conductivities
+3) Different thermal diffusivities
+4) Other
 
