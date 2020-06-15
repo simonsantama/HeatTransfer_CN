@@ -32,6 +32,9 @@ bc_description = ["Constant surface temperature = 500 $^\circ$C",
 # create an animation per boundary condition
 for i, bc in enumerate(T_analytical):
     
+#    if bc == "Dirichlet":
+#        continue
+    
     # print current boundary condition
     print(f"Animation {bc} boundary condition")
     
@@ -40,7 +43,7 @@ for i, bc in enumerate(T_analytical):
     ax.set_xlabel("Sample depth [mm]")
     
     x_limits = [-20,200]
-    y_limits = [[-50,500],[-100,1000],[-50,500]]
+    y_limits = [[-100,1000],[-100,1000],[-100,1000]]
     ax.set_xlim(x_limits)
     ax.set_xticks(np.linspace(0,x_limits[1] ,6))
     ax.set_ylabel("Temperature [$^\circ$C]")
@@ -51,7 +54,7 @@ for i, bc in enumerate(T_analytical):
     ax.set_title(f"{bc} boundary condition.\n {bc_description[i]}")
     
     # initialize plotted elements
-    text = ax.text(65, 350, "time = 0 seconds", fontsize = 12)
+    text = ax.text(115, 650, "time = 0 seconds", fontsize = 12)
     line_analytic, = ax.plot([],[], linewidth = 1.75, color = "maroon", label = "Analytical solution")
     line_numeric, = ax.plot([],[], linewidth = 0, color = "royalblue", marker = "o", markersize = 3.5, 
                             markerfacecolor = "lightskyblue", label = "Numerical solution")
@@ -75,7 +78,7 @@ for i, bc in enumerate(T_analytical):
         line_analytic.set_data(x, y_analytic)
         
         # for numerical results, since we are using the same grid, only plot one out of every 10 points
-        y_numeric = T_analytical[bc][i+1] - 300
+        y_numeric = T_numerical[bc][i+1] - 300
         line_numeric.set_data(x[::10],y_numeric[::10])
         
         text.set_text(f"time = {i} seconds")
@@ -89,6 +92,4 @@ for i, bc in enumerate(T_analytical):
 
 
     anim.save(f'{bc}.mp4', dpi = 300, fps = 30)
-
-    # break
     

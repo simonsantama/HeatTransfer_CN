@@ -11,6 +11,7 @@ It assumes a 1 dimensional, semi-infinite, inert and homogenous solid with const
 import numpy as np
 from scipy import special
 import pickle
+import time
 
 # import my own function
 from cn_validation import cn_solver
@@ -48,11 +49,12 @@ for bc in boundary_conditions:
     
     print(f"Calculating for {bc} boundary condition")        
         
+    # constant surface temperature
     if bc == "Dirichlet":
         
+        start_dirich_an = time.time()
         # store temperature profiles for this boundary condition
         T_analytical[bc] = {}
-        T_numerical[bc] = {}
         
         # constant surface temperature at T_surface = 800 K
         T_surface = 800
@@ -64,68 +66,96 @@ for bc in boundary_conditions:
             T_ansol = T_surface + (T_initial - T_surface)*special.erf(x_grid/(2 * np.sqrt(alpha * t)))
             # save temperature data into the analytical temperature
             T_analytical[bc][t] = T_ansol
+        print(f"Time taken for {bc} analytical solution: {np.round(time.time() - start_dirich_an,2)} seconds")
         
         
+        start_dirich_num = time.time()
         # calculate the numerical solution
-        T_num = cn_solver(x_grid, t_grid, upsilon, bc, space_divisions)
+        bc_data = T_surface
+        T_num = cn_solver(x_grid, t_grid, upsilon, bc, bc_data, space_divisions, T_initial, dx, k)
         # save temperature data into numerical solution
         T_numerical[bc] = T_num
-
+        print(f"Time taken for {bc} numerical solution: {np.round(time.time() - start_dirich_num,2)} seconds")
      
-#    elif bc == "Neunman":
-#        
-#        # store temperature profiles for this boundary condition
-#        T_analytical[bc] = {}
-#        T_numerical[bc] = {}
-#        
-#        # constant surface heat flux of q = 5 kW/m2
-#        q = 5000
-#        
-#        # iterate over each time step to calculate and store the analytical and numerical temperatures
-#        for t in range(1,time_total):
-#                    
-#            # calculate the analytical solution for the temperature profile
-#            T_ansol = T_initial + \
-#                    (2*q/k)*np.sqrt(alpha*t/np.pi)*np.exp(-x_grid**2/(4 * alpha * t)) - \
-#                    (q*x_grid/k)*special.erfc(x_grid/(2 * np.sqrt(alpha * t)))
-#            # save temperature data into the analytical temperature
-#            T_analytical[bc][t] = T_ansol
-#
-#            # calculating the numerical solution for the temperature profile
-#            T_num = 0
-#            # save temperature data into numerical solution
-#            T_numerical[bc][t] = T_num
-#        
-#    elif bc == "Robin":
-#        
-#        # store temperature profiles for this boundary condition
-#        T_analytical[bc] = {}
-#        T_numerical[bc] = {}
-#        
-#        # surface convection with a convective heat transfer coefficient of 50 W/m2K and a gas temperature of 800 K
-#        h = 50               # W/m2K
-#        T_infinity = 800     # K
-#        
-#        # iterate over each time step to calculate and store the analytical and numerical temperatures
-#        for t in range(1,time_total):
-#                    
-#            # calculate the analytical solution for the temperature profile
-#            T_ansol = T_initial + \
-#                    (T_infinity - T_initial)*(\
-#                    special.erfc(x_grid/(2*np.sqrt(alpha*t))) - \
-#                    np.exp(h*x_grid/k + h**2*alpha*t/k**2)*special.erfc(x_grid/(2*np.sqrt(alpha*t)) + h*np.sqrt(alpha*t)/k) \
-#                    )
-#
-#            # save temperature data into the analytical temperature
-#            T_analytical[bc][t] = T_ansol
-#            
-#            # calculating the numerical solution for the temperature profile
-#            T_num = 100
-#            # save temperature data into numerical solution
-#            T_numerical[bc][t] = T_num
+    # constant surface heat flux
+    elif bc == "Neunman":
+        
+        start_neunm_an = time.time()
+        # store temperature profiles for this boundary condition
+        T_analytical[bc] = {}
+        T_numerical[bc] = {}
+        
+        # constant surface heat flux of q = 5 kW/m2
+        q = 5000
+        
+        # iterate over each time step to calculate and store the analytical and numerical temperatures
+        for t in range(1,time_total):
+                    
+            # calculate the analytical solution for the temperature profile
+            T_ansol = T_initial + \
+                    (2*q/k)*np.sqrt(alpha*t/np.pi)*np.exp(-x_grid**2/(4 * alpha * t)) - \
+                    (q*x_grid/k)*special.erfc(x_grid/(2 * np.sqrt(alpha * t)))
+            # save temperature data into the analytical temperature
+            T_analytical[bc][t] = T_ansol
+        print(f"Time taken for {bc} analytical solution: {np.round(time.time() - start_neunm_an,2)} seconds")
 
+        start_neum_num = time.time()
+        # calculate the numerical solution
+        bc_data = q
+        T_num = cn_solver(x_grid, t_grid, upsilon, bc, bc_data, space_divisions, T_initial, dx, k)
+        # save temperature data into numerical solution
+        T_numerical[bc] = T_num
+        print(f"Time taken for {bc} numerical solution: {np.round(time.time() - start_neum_num,2)} seconds")
+        
+    # surface convective heating
+    elif bc == "Robin":
+        
+        start_robin_an = time.time()
+        # store temperature profiles for this boundary condition
+        T_analytical[bc] = {}
+        T_numerical[bc] = {}
+        
+        # surface convection with a convective heat transfer coefficient of 50 W/m2K and a gas temperature of 800 K
+        h = 50               # W/m2K
+        T_infinity = 800     # K
+        
+        # iterate over each time step to calculate and store the analytical and numerical temperatures
+        for t in range(1,time_total):
+                    
+            # calculate the analytical solution for the temperature profile
+            T_ansol = T_initial + \
+                    (T_infinity - T_initial)*(\
+                    special.erfc(x_grid/(2*np.sqrt(alpha*t))) - \
+                    np.exp(h*x_grid/k + h**2*alpha*t/k**2)*special.erfc(x_grid/(2*np.sqrt(alpha*t)) + h*np.sqrt(alpha*t)/k) \
+                    )
+
+            # save temperature data into the analytical temperature
+            T_analytical[bc][t] = T_ansol    
+        print(f"Time taken for {bc} analytical solution: {np.round(time.time() - start_robin_an,2)} seconds")
+        
+        start_robin_num = time.time()
+        # calculate the numerical solution
+        bc_data = h, T_infinity
+        T_num = cn_solver(x_grid, t_grid, upsilon, bc, bc_data, space_divisions, T_initial, dx, k)
+        # save temperature data into numerical solution
+        T_numerical[bc] = T_num
+        print(f"Time taken for {bc} numerical solution: {np.round(time.time() - start_robin_num,2)} seconds")
+
+# since analytical solutions are evaluted at 1 Hz, drop columns from numerical solution to facilitate plotting
+T_numerical_int = {}
+list_indexes = []
+
+for bc in boundary_conditions:
+    T_numerical_int[bc] = {}
+    for i in range(1,time_total):
+        for key in T_numerical[bc].keys():
+            if float(key) > i:
+                T_numerical_int[bc][i] = T_numerical[bc][key]
+                break
+            continue 
+    
 # condense all temperatures into one dictionary
-validation_temperatures = {"analytical": T_analytical, "numerical": T_numerical}
+validation_temperatures = {"analytical": T_analytical, "numerical": T_numerical_int}
 
 # save in a pickle to retrieve and plot later
 with open('validation_temperatures.pickle', 'wb') as handle:
