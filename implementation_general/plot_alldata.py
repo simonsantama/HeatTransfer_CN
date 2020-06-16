@@ -53,11 +53,32 @@ for level1_hftype in Temperatures:
                 for level5_alpha in Temperatures[level1_hftype][level2_bcsurface][level3_bcback][level4_hf]:
                     
                     Temperatures_1Hz[level1_hftype][level2_bcsurface][level3_bcback][level4_hf][level5_alpha] = {}
-                    for time_int in range(time_total):
-                        for time_stamp in Temperatures[level1_hftype][level2_bcsurface][level3_bcback][level4_hf][level5_alpha]:
-                            if float(time_stamp.split("_")[1]) > time_int:
-                                Temperatures_1Hz[level1_hftype][level2_bcsurface][level3_bcback][level4_hf][level5_alpha][time_int] = Temperatures[level1_hftype][level2_bcsurface][level3_bcback][level4_hf][level5_alpha][time_stamp]
+                    # order time stamps (since dictionary keys are not ordered)
+                    ordered_timestamps = [float(x.split("_")[1]) for x in 
+                                          Temperatures[level1_hftype][level2_bcsurface][level3_bcback][level4_hf][level5_alpha].keys()]
+                    ordered_timestamps.sort()
 
+                    # extract the index that is closes to the integer time
+                    time_int = 0
+                    # takes value of time stamp that is closes (but larger) that the integer time                    
+                    for t_number, time_stamp in enumerate(ordered_timestamps):
+                        
+                        # time 0
+                        if t_number == 0:
+                            Temperatures_1Hz[level1_hftype][level2_bcsurface][level3_bcback][
+                                    level4_hf][level5_alpha][time_int] = Temperatures[level1_hftype][level2_bcsurface][
+                                            level3_bcback][level4_hf][level5_alpha][f"t_{time_stamp}"]
+                        # other times
+                        else:    
+                            time_int_new = int(time_stamp)
+                            if time_int_new > time_int:
+                                Temperatures_1Hz[level1_hftype][level2_bcsurface][level3_bcback][
+                                    level4_hf][level5_alpha][time_int_new] = Temperatures[level1_hftype][level2_bcsurface][
+                                            level3_bcback][level4_hf][level5_alpha][f"t_{time_stamp}"]
+                                time_int = time_int_new
+                            else:
+                                pass
+                        
 print(f"Time taken for reducing the temperature data to 1 Hz: {np.round(time.time() - start,2)}")
 
 
@@ -103,8 +124,11 @@ for level1_hftype in Temperatures_1Hz:
                     hf = level4_hf.split("_")[1].split(".")[0]
                     axis.flatten()[i].set_title(f"q = {hf} kW/m$^2$")
                 elif hf_type == "Linear":
-                    hf = int(level4_hf.split("_")[1].split(".")[0])/100
-                    axis.flatten()[i].set_title(f"q = {hf}*t kW/m$^2s$")
+                    hf = int(level4_hf.split("_")[1])
+                    axis.flatten()[i].set_title(f"q = {hf}$\cdot$t kW/m$^2s$")
+                elif hf_type == "Quadratic":
+                    hf = float(level4_hf.split("_")[1])
+                    axis.flatten()[i].set_title(f"q = {'{:.1e}'.format(hf)}$\cdot$t$^2$ kW/m$^2s^2$")                    
 
                 # initialize plotted elements
                 for j, level5_alpha in enumerate(Temperatures[level1_hftype][level2_bcsurface][level3_bcback][level4_hf]):
@@ -147,28 +171,28 @@ for level1_hftype in Temperatures_1Hz:
                                 level3_keys[0]][level4_keys[l]]
                         
                         # plot in C. data is in K.
-                        y = temperature_data[k]
+                        y = temperature_data[k] - 288
                         line.set_data(x,y)
                     
                     # second subplot
                     elif 4 <= l < 8:
                         temperature_data = Temperatures_1Hz[level1_hftype][level2_bcsurface][level3_bcback][
-                                level3_keys[0]][level4_keys[l-4]]
-                        y = temperature_data[k]
+                                level3_keys[1]][level4_keys[l-4]]
+                        y = temperature_data[k] - 288
                         line.set_data(x,y)
                         
                     # third subplot
                     elif 8 <= l < 12:
                         temperature_data = Temperatures_1Hz[level1_hftype][level2_bcsurface][level3_bcback][
-                                level3_keys[0]][level4_keys[l-8]]
-                        y = temperature_data[k]
+                                level3_keys[2]][level4_keys[l-8]]
+                        y = temperature_data[k] - 288
                         line.set_data(x,y)
                     
                     # fourth subplot
                     elif 12 <= l:
                         temperature_data = Temperatures_1Hz[level1_hftype][level2_bcsurface][level3_bcback][
-                                level3_keys[0]][level4_keys[l-12]]
-                        y = temperature_data[k]
+                                level3_keys[3]][level4_keys[l-12]]
+                        y = temperature_data[k] - 288
                         line.set_data(x,y)
                         
                 return all_lines

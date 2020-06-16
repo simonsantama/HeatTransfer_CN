@@ -16,7 +16,6 @@ b) insulated boundary
 
 # import python libraries
 import numpy as np
-from scipy import special
 import pickle
 import time
 
@@ -28,7 +27,7 @@ heat_fluxes = ["Constant", "Linear", "Quadratic"]
 
 # create list with boundary conditions to be validated
 boundary_conditions_surface = ["Linear", "Non-linear"]
-boundary_conditions_back = ["Insulation", "Aluminium_block"]
+boundary_conditions_back = ["Insulation", "Aluminium-block"]
 
 # create a dictionary to store temperature profiles for all boundary conditions and all times
 Temperatures = {}
@@ -36,13 +35,14 @@ Temperatures = {}
 # parameters for the calculations
 T_initial = 288                      # K
 T_air = T_initial                    # K
-time_total = 51                     # s
+time_total = 101                      # s
 sample_length = 0.025                # m
 space_divisions = 100                # -
+h = 45                               # W/m2K for linearised surface bc with constant heat transfer coefficient
 
 # define a range of properties to be used to evaluate the response of the material (these are syntethic properties)
-k = np.linspace(0.2, 0.5, 7)           # W/mK
-alpha = np.linspace(1e-7, 1.2e-6, 7)   # J/kgK
+k = np.linspace(0.2, 0.5, 4)           # W/mK
+alpha = np.linspace(1e-7, 1.0e-6, 4)   # J/kgK
 
 # create spatial mesh
 dx = sample_length/(space_divisions - 1)
@@ -64,6 +64,18 @@ for hf_type in heat_fluxes:
     print(f" {hf_type} heat flux ")
     print("---------")
     Temperatures[f"hf-type:_{hf_type}"] = {}
+    
+    # according to the type of heat flux, different parameters are used to define the function
+    q_all = []
+    if hf_type == "Constant":
+        q = np.linspace(20,80,4)
+        q_all.append(q)
+    elif hf_type == "Linear":
+        q = np.linspace(0.1,0.7,4)
+        q_all.append(q)
+    elif hf_type == "Quadratic":
+        q = np.linspace(2.5e-5, 1e-4,4)
+        q_all.append(q)
 
     # iterate over surface boundary conditions
     for bc_surface in boundary_conditions_surface:
@@ -73,19 +85,17 @@ for hf_type in heat_fluxes:
         
         # iterate over back boundary conditions
         for bc_back in boundary_conditions_back:
-            
-            print(f" -Back boundary condition {bc_back}-")
-            
+                        
             start = time.time()
             Temperatures[f"hf-type:_{hf_type}"][f"Surface_{bc_surface}"][f"Back_{bc_back}"] = general_temperatures(hf_type, T_initial, T_air, time_total, k, alpha, dx, x_grid,
-                        space_divisions,dt_all,t_grid, upsilon, bc_surface, bc_back)
+                        space_divisions,dt_all,t_grid, upsilon, bc_surface, bc_back, q, h)
             
             print(f"Time taken for {bc_surface} and {bc_back}: {np.round(time.time() - start,2)} seconds")
 
 
 # condense all data to be saved including important plotting parameters
 total_data = {"Temperatures": Temperatures, "extra_data": {
-        "t_grid":t_grid, "x_grid":x_grid, "time_total": time_total},
+        "t_grid":t_grid, "x_grid":x_grid, "time_total": time_total, "alpha": alpha, "k": k, "q_all": q_all},
     }
 
 # save in a pickle to retrieve and plot later
