@@ -35,7 +35,7 @@ Temperatures = {}
 # parameters for the calculations
 T_initial = 288                      # K
 T_air = T_initial                    # K
-time_total = 101                      # s
+time_total = 401                      # s
 sample_length = 0.025                # m
 space_divisions = 100                # -
 h = 45                               # W/m2K for linearised surface bc with constant heat transfer coefficient
@@ -58,6 +58,7 @@ for i,dt in enumerate(dt_all):
 upsilon = (alpha*dt)/(2*dx**2)
 
 # iterate over three possible types of heat fluxes
+q_all = []
 for hf_type in heat_fluxes:
     
     print("---------")
@@ -66,9 +67,9 @@ for hf_type in heat_fluxes:
     Temperatures[f"hf-type:_{hf_type}"] = {}
     
     # according to the type of heat flux, different parameters are used to define the function
-    q_all = []
+
     if hf_type == "Constant":
-        q = np.linspace(20,80,4)
+        q = np.linspace(15,30,4)
         q_all.append(q)
     elif hf_type == "Linear":
         q = np.linspace(0.1,0.7,4)

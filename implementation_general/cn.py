@@ -250,7 +250,6 @@ def vector_b(bc_surface, bc_back, upsilon, space_divisions, dx, k, T, T_initial,
     
     # adjust vector for the front boundary condition
     if bc_surface == "Linear":
-        a= 1
         b[0] = 2*upsilon*T[1] + (1 - 2*upsilon - upsilon*2*dx*h/k)*T[0] + 4*upsilon*dx*h*T_air/k + \
         2*dx*upsilon/k * (q_array[j+1]+q_array[j])
     

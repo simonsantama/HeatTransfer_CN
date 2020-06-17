@@ -6,10 +6,11 @@ This script creates animations to compare the data
 # import libraries
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+from matplotlib.lines import Line2D
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import pickle
 import numpy as np
 import time
-import pandas as pd
 
 # import data created in main_validation.py
 with open('total_data_general.pickle', 'rb') as handle:
@@ -22,6 +23,7 @@ x_grid = total_data_general["extra_data"]["x_grid"]
 time_total = total_data_general["extra_data"]["time_total"]
 alpha = total_data_general["extra_data"]["alpha"]
 k = total_data_general["extra_data"]["k"]
+q_all = total_data_general["extra_data"]["q_all"]
 
 # plotting parameters
 figure_size = (12,6)
@@ -29,11 +31,15 @@ figure_title_fs = 15
 subplot_title_fs = 13
 axis_labels_fs = 12
 text_fs = 11
+inset_axis_labels_fs = 9
+inset_axis_ticks_fs = 8
 y_limits = [-50, 500]
 x_limits = [- x_grid[-1]*1000/10, x_grid[-1]*1000]
 line_styles = ["-", "--", ":", "-."]
 line_color = ["firebrick", "royalblue", "seagreen", "black"] # "blueviolet"]
 line_width = 1.75
+line_width_inset = 1.25
+line_color_q = "dimgrey"
 
 # for plots and animations, all data must be logged at the same frequency. This loop creates a similar encompassing dictionary with data at 1 Hz
 start= time.time()
@@ -114,7 +120,17 @@ for level1_hftype in Temperatures_1Hz:
                 ax.set_xlim(x_limits)
             for ax in axis.flatten():
                 ax.grid(color = "gainsboro", linestyle = "--", linewidth = 0.75)
-                      
+                
+            # add inset to first subplot to show evolution of the heat flux
+            ax_inset = inset_axes(axis[0,0], width = "35%", height = "45%", borderpad = 1.5)
+            ax_inset.set_xlabel("Time [s]", fontsize = inset_axis_labels_fs)
+            ax_inset.set_xlim([0,100])
+            ax_inset.set_xticks(np.linspace(0,100,5))
+            ax_inset.set_ylabel("q [kW/m$^2$]", fontsize = inset_axis_labels_fs)
+            ax_inset.set_ylim([0,60])
+            ax_inset.set_yticks(np.linspace(0,60,5))
+            ax_inset.grid(color = "gainsboro", linestyle = "--", linewidth = 0.5)
+            
             # create list to store every plotting line
             all_lines = []
             for i,level4_hf in enumerate(Temperatures_1Hz[level1_hftype][level2_bcsurface][level3_bcback]):
@@ -122,13 +138,13 @@ for level1_hftype in Temperatures_1Hz:
                 # title of every subplot is the heat flux                
                 if hf_type == "Constant":
                     hf = level4_hf.split("_")[1].split(".")[0]
-                    axis.flatten()[i].set_title(f"q = {hf} kW/m$^2$")
+                    axis.flatten()[i].set_title(f"q$_{i}$ = {hf} kW/m$^2$")
                 elif hf_type == "Linear":
-                    hf = int(level4_hf.split("_")[1])
-                    axis.flatten()[i].set_title(f"q = {hf}$\cdot$t kW/m$^2s$")
+                    hf = float(level4_hf.split("_")[1])
+                    axis.flatten()[i].set_title(f"q$_{i}$ = {hf}$\cdot$t kW/m$^2s$")
                 elif hf_type == "Quadratic":
                     hf = float(level4_hf.split("_")[1])
-                    axis.flatten()[i].set_title(f"q = {'{:.1e}'.format(hf)}$\cdot$t$^2$ kW/m$^2s^2$")                    
+                    axis.flatten()[i].set_title(f"q$_{i}$ = {'{:.1e}'.format(hf)}$\cdot$t$^2$ kW/m$^2s^2$")                    
 
                 # initialize plotted elements
                 for j, level5_alpha in enumerate(Temperatures[level1_hftype][level2_bcsurface][level3_bcback][level4_hf]):
@@ -137,12 +153,46 @@ for level1_hftype in Temperatures_1Hz:
                                                linestyle = line_styles[j], label = "{:.1e}".format(alpha[j]))
                         all_lines.append(line)
                         
-                
-                # collect all the data into the temperature_data_animation numpy array
-                
-            # add text with counter to first subplot and legend to second    
-            axis[0,1].legend(fancybox = True, title = r"$\alpha$", loc = "upper right")
-            counter = axis[0,0].text(15,400, "time: 0 seconds", fontsize = text_fs)
+                            
+            # add legend to second subplot  
+            axis[0,1].legend(fancybox = True, title = r"$\alpha$ [$m^2/s$]", loc = "upper right", ncol = 1)
+            # add legend to third subplot but showing the values of k rather than alpha (requires dummy lines)
+            custom_lines = []
+            for z, k_value in enumerate(k):
+                generic_line = Line2D([0],[0], color = line_color[z], lw = line_width, linestyle = line_styles[z])
+                custom_lines.append(generic_line)
+            axis[1,0].legend(custom_lines, k, fancybox = True, title = "k [$W/mK$]", loc = "upper right", ncol = 1)            
+            
+            # add legend to fourth subplot to show the value of different heat fluxes in the insert (requires dummy lines)
+            custom_lines_q = []
+            for z, k_value in enumerate(q_all[0]):
+                generic_line = Line2D([0],[0], color = line_color_q, lw = line_width, linestyle = line_styles[z])
+                custom_lines_q.append(generic_line)
+            axis[1,1].legend(custom_lines_q, ["q$_0$", "q$_1$", "q$_2$", "q$_3$",], 
+                fancybox = True, title = "Inset: HF", loc = "upper right", ncol = 1)
+            
+            # add text with counter to the last subplot
+            counter = axis[1,0].text(12,420, "Time: 0 seconds", fontsize = text_fs,
+                          bbox=dict(facecolor='none', edgecolor='black', boxstyle='round,pad=0.5'))
+            
+            # to the all lines list append the heat flux line plots that are shown in the inset
+            t_grid_q = np.arange(0,time_total)
+            q_lines = []
+            if hf_type == "Constant":
+                q_values = q_all[0]
+                q_array_plot = [np.zeros_like(t_grid_q) + y for y in q_values]
+            if hf_type == "Linear":
+                q_values = q_all[1]
+                q_array_plot = [y*t_grid_q for y in q_values]
+            if hf_type == "Quadratic":
+                q_values = q_all[2]
+                q_array_plot = [y*t_grid_q*t_grid_q for y in q_values]
+            
+            for z,q_val in enumerate(q_values):
+                    q_line, = ax_inset.plot([],[], linewidth = line_width_inset, color = line_color_q, 
+                                               linestyle = line_styles[z], label = f"q$_{z}$")
+                    all_lines.append(q_line)
+            
             
             # dictionary keys used to access the temperature data with the animate function
             level3_keys = list(Temperatures_1Hz[level1_hftype][level2_bcsurface][level3_bcback].keys())
@@ -152,13 +202,13 @@ for level1_hftype in Temperatures_1Hz:
             def init():
                 for line in all_lines:
                         line.set_data([],[])
-                counter.set_text("time: 0 seconds")
+                counter.set_text("Time: 0 seconds")
                 return all_lines
             
             # animate function for FuncAnimate
             def animate(k):
                 # update counter
-                counter.set_text(f"time: {k} seconds")
+                counter.set_text(f"Time: {k} seconds")
                 # plot in mm
                 x = x_grid*1000
                 
@@ -189,10 +239,15 @@ for level1_hftype in Temperatures_1Hz:
                         line.set_data(x,y)
                     
                     # fourth subplot
-                    elif 12 <= l:
+                    elif 12 <= l < 16:
                         temperature_data = Temperatures_1Hz[level1_hftype][level2_bcsurface][level3_bcback][
                                 level3_keys[3]][level4_keys[l-12]]
                         y = temperature_data[k] - 288
+                        line.set_data(x,y)
+                        
+                    elif 16<= l:
+                        x = t_grid_q[:k]
+                        y = q_array_plot[l-16][:k]
                         line.set_data(x,y)
                         
                 return all_lines
@@ -206,8 +261,5 @@ for level1_hftype in Temperatures_1Hz:
             file_name_animation = f"./animations_alldata/{hf_type}_heatflux/Surface{bc_surface}_Back{bc_back}"
             anim.save(f'{file_name_animation}.mp4', dpi = 300, fps = 30)
             plt.close()
-            
 
     print(f"Time taken for {hf_type} heat flux animations: {np.round(time.time() - start,2)} seconds")
-    
-
