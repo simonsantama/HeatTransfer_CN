@@ -106,7 +106,7 @@ total_data = {"Temperatures": Temperatures, "extra_data": {
     }
 
 # save in a pickle to retrieve and plot later
-with open('total_data_general.pickle', 'wb') as handle:
+with open('total_data_general_backinsulated.pickle', 'wb') as handle:
     pickle.dump(total_data, handle)
     print("All data saved into total_data_general.pickle")
     
