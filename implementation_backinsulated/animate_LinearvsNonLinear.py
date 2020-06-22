@@ -46,13 +46,11 @@ line_width_inset = 1.25
 line_color_q = "dimgrey"
 alphas_to_plot = [alpha[0], alpha[-1]]
 ks_to_plot = [k[0], k[1]]
-temperaturedata_toplot = {}
 
 
 # animation of comparison between linear and non-linear surface boundary conditions
 for debug,level1_hftype in enumerate(Temperatures_1Hz):
     
-    temperaturedata_toplot[level1_hftype] = {}
     
 #    # dummy variable to only animate a given type of heat flux
 #    if debug in [0,1,2]:
