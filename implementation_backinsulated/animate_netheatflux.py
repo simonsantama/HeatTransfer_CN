@@ -165,7 +165,7 @@ for debug,level1_hftype in enumerate(nhf_1Hz):
         fancybox = True, loc = "upper left", ncol = 1)
         
     # add text with counter to the last subplot
-    counter = axis[0,0].text(100,24, "Time: 0 seconds", fontsize = text_fs,
+    counter = axis[0,0].text(100,44, "Time: 0 seconds", fontsize = text_fs,
                   bbox=dict(facecolor='none', edgecolor='black', boxstyle='round,pad=0.5'))
 
     # create the arrays with the corresponding heat flux values

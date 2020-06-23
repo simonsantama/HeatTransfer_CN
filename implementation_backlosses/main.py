@@ -53,6 +53,8 @@ alpha_aluminium = 4.3e-5
 dx = sample_length/(space_divisions - 1)
 x_grid_sample = np.array([i * dx for i in range(space_divisions)])
 
+
+
 # define time step based on the spatial mesh for each alpha and create mesh
 #dt_all = (1 / 3) * (dx**2 / alpha)
 #time_divisions = time_total / dt_all
