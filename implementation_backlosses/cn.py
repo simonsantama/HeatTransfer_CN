@@ -6,15 +6,12 @@ Crank-Nicholson implementation of 1D heat transfer
 import numpy as np
 
 def general_temperatures(hf_type, T_initial, T_air, time_total, k, alpha, dx, x_grid, space_divisions, dt_all,
-                    t_grid, upsilon, bc_surface, bc_back, q, h, hc, emissivity, sigma):
+                    t_grid, upsilon, bc_surface, q, h, hc, emissivity, sigma):
     """
     General function to implement CN.
     Creates different functions of time for the incident heat flux.
     Returns dictionary that includes all calculated temperature for given boundary conditions evaluated at different
     properties and parameters
-    
-    Validation function: Exposed surface uses dirichlet, neunman or robin boundary conditions.
-    Semi-infinite solid
     
     CN Scheme:
     ---------
@@ -60,9 +57,6 @@ def general_temperatures(hf_type, T_initial, T_air, time_total, k, alpha, dx, x_
         float
         
     bc_surface: surface boundary condition (linear or non-linear)
-        str
-        
-    bc_back: back boundary condition (insulation or conductive losses to aluminium block)
         str
         
     q: array of values for heat flux calculations to determine heat flux as a function of time
@@ -111,7 +105,7 @@ def general_temperatures(hf_type, T_initial, T_air, time_total, k, alpha, dx, x_
             Tn = np.zeros_like(x_grid)            
             
             # create tridiagonal matrix A
-            A = tridiag_matrix(bc_surface, bc_back, upsilon_this, space_divisions, dx, k_this, T, h, emissivity, sigma)
+            A = tridiag_matrix(bc_surface, upsilon_this, space_divisions, dx, k_this, T, h, hc, emissivity, sigma)
             
             # define the incident heat flux
             if hf_type == "Constant":
@@ -126,12 +120,16 @@ def general_temperatures(hf_type, T_initial, T_air, time_total, k, alpha, dx, x_
                 
             
             temperatures[f"q:_{heat_flux}"][f"alpha_{alpha_this}"] = {}
+    
             
             # iterate over each time step
             for j,t in enumerate(t_grid_this[:-1]):
                 
+                if bc_surface == "Non-linear":
+                    A = tridiag_matrix(bc_surface, upsilon_this, space_divisions, dx, k_this, T, h, hc, emissivity, sigma)
+
                 # create vector b
-                b = vector_b(bc_surface, bc_back, upsilon_this, space_divisions, dx, k_this, T, T_initial, T_air, q_array, h, hc, 
+                b = vector_b(bc_surface, upsilon_this, space_divisions, dx, k_this, T, T_initial, T_air, q_array, h, hc, 
                              emissivity, sigma, j)
                 
                 # calculate value of future temperature
@@ -148,7 +146,7 @@ def general_temperatures(hf_type, T_initial, T_air, time_total, k, alpha, dx, x_
     
 
 # function to create tri-diagonal matrix
-def tridiag_matrix(bc_surface, bc_back, upsilon, space_divisions, dx, k, T, h, emissivity, sigma):
+def tridiag_matrix(bc_surface, upsilon, space_divisions, dx, k, T, h, hc, emissivity, sigma):
     """
     Creates tridiagonal matrix A
     Linear system to be solved is Ax = b, and x represents temperature values at time n+1
@@ -156,9 +154,6 @@ def tridiag_matrix(bc_surface, bc_back, upsilon, space_divisions, dx, k, T, h, e
     Parameters:
     ----------
     bc_surface: boundary condition at the surface
-        str
-    
-    bc_back: boundary condition at the back
         str
     
     upsilon: Fourier number divided by 2. Upsilon = alpha*dt/2*dx2
@@ -177,6 +172,9 @@ def tridiag_matrix(bc_surface, bc_back, upsilon, space_divisions, dx, k, T, h, e
         np.array
         
     h: total heat transfer coefficient for the linearised surface boundary condition
+        int
+        
+    hc: convective heat transfer coefficient
         int
         
     emissivity: surface emmisivity, assumed constant
@@ -203,32 +201,26 @@ def tridiag_matrix(bc_surface, bc_back, upsilon, space_divisions, dx, k, T, h, e
         A[0,1] = -2*upsilon
     
     elif bc_surface == "Non-linear":
-        A[0,0] = 1 + 2*upsilon + 2*dx*h*upsilon/k+ 8*emissivity*sigma*dx*upsilon*T[0]**3/k
+#        A[0,0] = 1 + 2*upsilon + 2*upsilon*hc*dx/k + 2*upsilon*emissivity*sigma*dx*T[0]**3
+        A[0,0] = 1 + 2*upsilon + 2*dx*hc*upsilon/k+ 8*emissivity*sigma*dx*upsilon*T[0]**3/k
         A[0,1] = -2*upsilon
     
     # adjust matrix for the back boundary conditions
-    if bc_back == "Insulation":
-        A[-1, -2] = - 2 * upsilon
-        A[-1, -1] = 1 + 2 * upsilon
-    
-    elif bc_back == "Aluminium_block":
-        pass
+    A[-1, -2] = - 2 * upsilon
+    A[-1, -1] = 1 + 2 * upsilon
 
     return A
 
 
 
 
-def vector_b(bc_surface, bc_back, upsilon, space_divisions, dx, k, T, T_initial, T_air, q_array, h, hc, emmissivity, sigma, j):
+def vector_b(bc_surface, upsilon, space_divisions, dx, k, T, T_initial, T_air, q_array, h, hc, emmissivity, sigma, j):
     """
     Calculates vector b. Right hand side of linear system of equations
 
     Parameters:
     ----------
     bc_surface: boundary condition at the surface
-        str
-    
-    bc_back: boundary condition at the back
         str
     
     upsilon: Fourier number divided by 2. Upsilon = alpha*dt/2*dx2
@@ -291,16 +283,12 @@ def vector_b(bc_surface, bc_back, upsilon, space_divisions, dx, k, T, T_initial,
             2*dx*upsilon/k * (q_array[j+1]+q_array[j])
     
     elif bc_surface == "Non-linear":
-        b[0] = 2*upsilon*T[1] + (1- 2*upsilon - 2*dx*hc*upsilon/k)*T[0] + 4*dx*h*upsilon*T_air/k + \
+        b[0] = 2*upsilon*T[1] + (1- 2*upsilon - 2*dx*hc*upsilon/k)*T[0] + 4*dx*hc*upsilon*T_air/k + \
             4*emmissivity*sigma*dx*upsilon*T[0]**4/k + 2*dx*upsilon/k * (q_array[j+1]+q_array[j])
     
     # adjust vector for the back boundary condition
-    if bc_back == "Insulation":
-        b[-1] = (1 - 2*upsilon)*T[-1] + 2*upsilon*T[-2]
-    
-    elif bc_back == "Aluminium_block":
-        pass
-    
+    b[-1] = (1 - 2*upsilon)*T[-1] + 2*upsilon*T[-2]
+
     return b    
     
 

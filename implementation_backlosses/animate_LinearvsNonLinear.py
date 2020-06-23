@@ -1,6 +1,7 @@
 """
 This script creates animations to compare the data.
-Animates surface temperature evolution for all the conditions studied.
+At every heat flux, plots data at lowest and highest thermal diffusivity to compare linear and non linear surface 
+boundary condition
 
 Must run main.py and alltemperaturedata_to_1Hzdata.py before running this script (requires the file temperatures_backinsulated_1Hz.pickle)
 
@@ -10,6 +11,7 @@ Must run main.py and alltemperaturedata_to_1Hzdata.py before running this script
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from matplotlib.lines import Line2D
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import pickle
 import numpy as np
 import time
@@ -36,38 +38,21 @@ text_fs = 11
 inset_axis_labels_fs = 9
 inset_axis_ticks_fs = 8
 y_limits = [-80, 800]
-y_limits_secondary = [-6,60]
-x_limits = [-30,300]
+x_limits = [- x_grid[-1]*1000/10, x_grid[-1]*1000]
 line_styles = ["-", "--", ":", "-."]
 line_color = ["firebrick", "royalblue", "seagreen", "black"] # "blueviolet"]
 line_width = 1.75
 line_width_inset = 1.25
 line_color_q = "dimgrey"
+alphas_to_plot = [alpha[0], alpha[-1]]
+ks_to_plot = [k[0], k[1]]
 
-Surface_temperatures_1Hz = {}
-# create a dictionary with the surface temperature data
-for level1_hftype in Temperatures_1Hz:
-    Surface_temperatures_1Hz[level1_hftype] = {}
-    
-    for level2_bcsurface in Temperatures_1Hz[level1_hftype]:
-        Surface_temperatures_1Hz[level1_hftype][level2_bcsurface] = {}
-        
-        for level3_hf in Temperatures_1Hz[level1_hftype][level2_bcsurface]:
-            Surface_temperatures_1Hz[level1_hftype][level2_bcsurface][level3_hf] = {}
-            
-            for level4_alpha in Temperatures_1Hz[level1_hftype][level2_bcsurface][level3_hf]:
-                Surface_temperatures_1Hz[level1_hftype][level2_bcsurface][level3_hf][level4_alpha] = np.zeros(time_total)
-                
-                # extract surface temperature at every time step
-                for time_stamp in range(time_total):
-                    Surface_temperatures_1Hz[level1_hftype][level2_bcsurface][level3_hf][level4_alpha][time_stamp] = \
-                        Temperatures_1Hz[level1_hftype][level2_bcsurface][level3_hf][level4_alpha][time_stamp][0]
 
-# animation of surface temperature evolution
+# animation of comparison between linear and non-linear surface boundary conditions
 for debug,level1_hftype in enumerate(Temperatures_1Hz):
     
     
-    # dummy variable to only animate a given type of heat flux
+#    # dummy variable to only animate a given type of heat flux
 #    if debug in [0,1,2]:
 #        continue
     
@@ -87,28 +72,25 @@ for debug,level1_hftype in enumerate(Temperatures_1Hz):
     fig, axis = plt.subplots(2,2, sharey = True, sharex = True, constrained_layout = True, figsize = figure_size)
     fig.suptitle(figure_title, fontsize = figure_title_fs)
     for ax in [axis[0,0], axis[1,0]]:
-        ax.set_ylabel("$T_{surf}$ [$^\circ$C]", fontsize = axis_labels_fs)
+        ax.set_ylabel("Temperature [$^\circ$C]", fontsize = axis_labels_fs)
         ax.set_ylim(y_limits)
         ax.set_yticks(np.linspace(0,y_limits[1],5))
     for ax in [axis[1,0], axis[1,1]]:
-        ax.set_xlabel("Time [s]", fontsize = axis_labels_fs)
+        ax.set_xlabel("Sample depth [mm]", fontsize = axis_labels_fs)
         ax.set_xlim(x_limits)
-        ax.set_xticks(np.linspace(0,x_limits[1], 7))
-    secondary_axes = []
-    for i, ax in enumerate(axis.flatten()):
-        ax.grid(color = "gainsboro", linestyle = "--", linewidth = 0.75)
-        
-        # secondary axis to show heat flux
-        ax1 = ax.twinx()
-        ax1.set_ylim(y_limits_secondary)
-        if i in [0,2]:
-            ax1.axes.yaxis.set_ticklabels([])
-        else:
-            ax1.set_yticks(np.linspace(0,y_limits_secondary[1],5))
-            ax1.set_ylabel("Heat Flux [$kW/m^2$]")
-        secondary_axes.append(ax1)
-        
-        
+    for ax in axis.flatten():
+        ax.grid(color = "gainsboro", linestyle = "--", linewidth = 0.75)    
+    
+    # add inset to first subplot to show evolution of the heat flux
+    ax_inset = inset_axes(axis[0,0], width = "35%", height = "45%", borderpad = 1.5)
+    ax_inset.set_xlabel("Time [s]", fontsize = inset_axis_labels_fs)
+    ax_inset.set_xlim([0,300])
+    ax_inset.set_xticks(np.linspace(0,300,6))
+    ax_inset.set_ylabel("q [kW/m$^2$]", fontsize = inset_axis_labels_fs)
+    ax_inset.set_ylim([-6,66])
+    ax_inset.set_yticks(np.linspace(0,60,4))
+    ax_inset.grid(color = "gainsboro", linestyle = "--", linewidth = 0.5)  
+    
     level2_keys = list(Temperatures_1Hz[level1_hftype].keys())
     for i,level3_hf in enumerate(Temperatures_1Hz[level1_hftype][level2_keys[0]]):
     
@@ -126,46 +108,28 @@ for debug,level1_hftype in enumerate(Temperatures_1Hz):
             hf = float(level3_hf.split("_")[1])
             axis.flatten()[i].set_title(f"q$_{i}$ = Sin({'{:.1e}'.format(hf)}$\cdot$t) kW/m$^2s$")      
     
-    # add legend to first plot showing the different values of alpha
+    # add legend to thrid plot showing the different values of alpha
     custom_lines = []
-    for z, alpha_value in enumerate([alpha[0], alpha[-1]]):
-        generic_line = Line2D([0],[0], color = line_color[z], lw = line_width, linestyle = line_styles[0])
+    for z, alpha_value in enumerate(alphas_to_plot):
+        generic_line = Line2D([0],[0], color = line_color[z], lw = line_width, linestyle = line_styles[z])
         custom_lines.append(generic_line)
-    legend_alphas = axis[0,0].legend(custom_lines, [alpha[0], alpha[-1]], fancybox = True, 
-                        title = r"$\alpha$ [$m^2/s$]", 
-                        loc = "upper left", ncol = 1) 
-    axis[0,0].add_artist(legend_alphas)
-
-    # add legend to thrid plot showing the different values of k
-    custom_lines = []
-    for z, alpha_value in enumerate([k[0], k[-1]]):
-        generic_line = Line2D([0],[0], color = line_color[z], lw = line_width, linestyle = line_styles[0])
-        custom_lines.append(generic_line)
-    legend_alphas = axis[0,1].legend(custom_lines, [k[0], k[-1]], fancybox = True, 
-                        title = r"$k$ [$W/mK$]", 
-                        loc = "upper left", ncol = 1) 
-    axis[0,1].add_artist(legend_alphas)  
-    
-    # add legend to thrid plot showing the different values of k
-    custom_lines = []
-    for z in range(2):
-        generic_line = Line2D([0],[0], color = "black", lw = line_width, linestyle = line_styles[z])
-        custom_lines.append(generic_line)
-    legend_alphas = axis[1,0].legend(custom_lines, ["Linear", "Non-linear"], fancybox = True, 
-                        title = "Surface BC", 
-                        loc = "upper left", ncol = 1) 
-    axis[1,0].add_artist(legend_alphas) 
-    
+    legend_alphas = axis[1,0].legend(custom_lines, list(zip(alphas_to_plot, ks_to_plot)), fancybox = True, 
+                        title = r"$\alpha$ [$m^2/s$], $k$ [W/mk]", 
+                        loc = "upper right", ncol = 1) 
+    axis[1,0].add_artist(legend_alphas)
 
     # add legend to fourth subplot to show the value of different heat fluxes in the insert (requires dummy lines)
-    generic_line = [Line2D([0],[0], color = line_color_q, lw = line_width, linestyle = ":")]
-    axis[1,1].legend(generic_line, ["Heat Flux"], 
-        fancybox = True, loc = "upper left", ncol = 1)
+    custom_lines_q = []
+    for z, k_value in enumerate(q_all[0]):
+        generic_line = Line2D([0],[0], color = line_color_q, lw = line_width, linestyle = line_styles[z])
+        custom_lines_q.append(generic_line)
+    axis[1,1].legend(custom_lines_q, ["q$_0$", "q$_1$", "q$_2$", "q$_3$",], 
+        fancybox = True, title = "Inset: HF", loc = "upper right", ncol = 1)
         
     # add text with counter to the last subplot
-    counter = axis[0,0].text(150,670, "Time: 0 seconds", fontsize = text_fs,
+    counter = axis[0,1].text(5,670, "Time: 0 seconds", fontsize = text_fs,
                   bbox=dict(facecolor='none', edgecolor='black', boxstyle='round,pad=0.5'))
-
+    
     # to the all lines list append the heat flux line plots that are shown in the inset
     t_grid_q = np.arange(0,time_total)
     q_lines = []
@@ -187,27 +151,34 @@ for debug,level1_hftype in enumerate(Temperatures_1Hz):
 
     # create list to store every plotting line
     all_lines = []
-    all_lines_info = []
+    all_lines_order = []
     level2_keys = list(Temperatures_1Hz[level1_hftype].keys())
     level3_keys = list(Temperatures_1Hz[level1_hftype][level2_keys[0]].keys())
     level4_keys = list(Temperatures_1Hz[level1_hftype][level2_keys[0]][level3_keys[0]].keys())
     
+    line_counter = 0
     for j, level3_hf in enumerate(level3_keys):
-        for linearity,level2_bcsurface in enumerate(level2_keys):
+        for m,level2_bcsurface in enumerate(level2_keys):
             for z, alpha_plot in enumerate([level4_keys[0], level4_keys[-1]]):
                 line, = axis.flatten()[j].plot([],[], linewidth = line_width, color = line_color[z],
-                                    linestyle = line_styles[linearity])
+                                    linestyle = line_styles[m], label = level2_bcsurface.split("_")[1])
                 all_lines.append(line)
-                # all_lines_info used to get an idea of what each line corresponds to
-                all_lines_info.append(f"{alpha_plot} {level2_bcsurface} {level3_hf} {line_color[z]}")
-    
-    
-    # add lines for plottign the heat flux
-    for q_num,q_val in enumerate(q_values):
-            q_line, = secondary_axes[q_num].plot([],[], linewidth = line_width_inset, color = line_color_q, 
-                                       linestyle = ":")
+                all_lines_order.append(f"{line_counter} {alpha_plot} {level2_bcsurface} {level3_hf} {line_color[z]}")
+                line_counter += 1
+
+    # add legend to second subplot  
+    custom_lines = []
+    for _ in range(2):
+        generic_line = Line2D([0],[0], color = "black", lw = line_width, linestyle = line_styles[_])
+        custom_lines.append(generic_line)
+    axis[0,1].legend(custom_lines, ["Linear", "Non-linear"], 
+        fancybox = True, title = "Surface BC", loc = "upper right", ncol = 1)
+
+    # add lines for plottign the heat flux in the inset
+    for z,q_val in enumerate(q_values):
+            q_line, = ax_inset.plot([],[], linewidth = line_width_inset, color = line_color_q, 
+                                       linestyle = line_styles[z], label = f"q$_{z}$")
             all_lines.append(q_line)
-            all_lines_info.append(f"{q_val}")
         
                
     # init function for FuncAnimate
@@ -221,6 +192,8 @@ for debug,level1_hftype in enumerate(Temperatures_1Hz):
     def animate(k):
         # update counter
         counter.set_text(f"Time: {k} seconds")
+        # plot in mm
+        x = x_grid*1000
         
         for l,line in enumerate(all_lines):
             
@@ -231,41 +204,41 @@ for debug,level1_hftype in enumerate(Temperatures_1Hz):
                 if l%4 == 0:
                     level2_key = "Surface_Linear"
                     level3_key = f"q:_{q_values[int(l/4)]}"
-                    level4_key = level4_keys[0]
+                    level4_key = f"alpha_{alphas_to_plot[0]}"
 
-                    temperature_data = Surface_temperatures_1Hz[level1_hftype][level2_key][level3_key][level4_key]
-                    y = temperature_data[:k] - 288
-                    line.set_data(t_grid_q[:k],y)
+                    temperature_data = Temperatures_1Hz[level1_hftype][level2_key][level3_key][level4_key]
+                    y = temperature_data[k] - 288
+                    line.set_data(x,y)
                     
                 # lines 1,5,9,13 plot linear surface, higher alpha
                 if l%4 == 1:
                     level2_key = "Surface_Linear"
                     level3_key = f"q:_{q_values[int(np.floor(l/4))]}"
-                    level4_key = level4_keys[-1]
+                    level4_key = f"alpha_{alphas_to_plot[1]}"
                     
-                    temperature_data = Surface_temperatures_1Hz[level1_hftype][level2_key][level3_key][level4_key]
-                    y = temperature_data[:k] - 288
-                    line.set_data(t_grid_q[:k],y)
+                    temperature_data = Temperatures_1Hz[level1_hftype][level2_key][level3_key][level4_key]
+                    y = temperature_data[k] - 288
+                    line.set_data(x,y)
                     
                 # lines 2, 6, 10, 14 plot non linear surface, low alpha
                 if l%4 == 2:
                     level2_key = "Surface_Non-linear"
                     level3_key = f"q:_{q_values[int(np.floor(l/4))]}"
-                    level4_key = level4_keys[0]
+                    level4_key = f"alpha_{alphas_to_plot[0]}"
                     
-                    temperature_data = Surface_temperatures_1Hz[level1_hftype][level2_key][level3_key][level4_key]
-                    y = temperature_data[:k] - 288
-                    line.set_data(t_grid_q[:k],y)             
+                    temperature_data = Temperatures_1Hz[level1_hftype][level2_key][level3_key][level4_key]
+                    y = temperature_data[k] - 288
+                    line.set_data(x,y)                
                 
                 # lines 3, 7, 11, 15 plot non linear surface, high alpha
                 if l%4 == 3:
                     level2_key = "Surface_Non-linear"
                     level3_key = f"q:_{q_values[int(np.floor(l/4))]}"
-                    level4_key = level4_keys[-1]
+                    level4_key = f"alpha_{alphas_to_plot[1]}"
                     
-                    temperature_data = Surface_temperatures_1Hz[level1_hftype][level2_key][level3_key][level4_key]
-                    y = temperature_data[:k] - 288
-                    line.set_data(t_grid_q[:k],y)
+                    temperature_data = Temperatures_1Hz[level1_hftype][level2_key][level3_key][level4_key]
+                    y = temperature_data[k] - 288
+                    line.set_data(x,y)
             
             # last four lines are the heat flux plots in the inset
             elif 16<= l:
@@ -282,7 +255,7 @@ for debug,level1_hftype in enumerate(Temperatures_1Hz):
     
        
     # save animation in the corresponding folder
-    file_name_animation = f"./animations_sufacetemperature/{hf_type}_heatflux-SurfaceTemperature"
+    file_name_animation = f"./animations_temperatureprofile/Comparisons_LinearvsNonLinear/{hf_type}_heatflux"
     anim.save(f'{file_name_animation}.mp4', dpi = 300, fps = 30)
     plt.close()
         
