@@ -56,7 +56,7 @@ t_grid = []
 for i,dt in enumerate(dt_all):
     t_grid.append(np.array([n * dt for n in range(int(time_divisions[i]))]))
     
-upsilon = (alpha*dt)/(2*dx**2)
+upsilon = (alpha*dt_all)/(2*dx**2)
 
 # iterate over the four possible types of heat fluxes
 q_all = []
