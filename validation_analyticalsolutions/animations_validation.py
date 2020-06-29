@@ -1,5 +1,5 @@
 """
-This script creates videos to compare the evolution of the temperature profiles for
+This script creates animations to compare the evolution of the temperature profiles for
 the three boundary conditions as calculated in main_validation.py
 
 """
@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import pickle
 import numpy as np
+import time
 
 # import data created in main_validation.py
 with open('validation_temperatures.pickle', 'rb') as handle:
@@ -32,11 +33,14 @@ bc_description = ["Constant surface temperature = 500 $^\circ$C",
 # create an animation per boundary condition
 for i, bc in enumerate(T_analytical):
     
-#    if bc == "Dirichlet":
-#        continue
+    # DEBUGGING
+    if i in []:
+        continue
+    
+    start = time.time()
     
     # print current boundary condition
-    print(f"Animation {bc} boundary condition")
+    print(f"Animation for {bc} boundary condition")
     
     # create figure and set style
     fig, ax = plt.subplots(1,1)
@@ -86,10 +90,10 @@ for i, bc in enumerate(T_analytical):
         return line_analytic, line_numeric, text
     
     anim = FuncAnimation(fig, animate, init_func=init,
-#                                    frames = 100,
                                    frames=time_total, 
                                    interval=20, blit=True)
 
 
     anim.save(f'{bc}.mp4', dpi = 300, fps = 30)
+    print(" - time taken for {bc} surface: {np.round(time.time() - start,2)} seconds")
     

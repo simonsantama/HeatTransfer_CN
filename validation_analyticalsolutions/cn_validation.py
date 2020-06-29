@@ -9,7 +9,7 @@ import numpy as np
 
 def cn_solver(x_grid, t_grid, upsilon, bc, bc_data, space_divisions, T_initial, dx, k):
     """
-    Applies Crank-Nicolson method to numerically solve the heat diffusion over the specified domain
+    Applies Crank-Nicolson method to numerically solve heat diffusion over the specified domain
     
     Validation function: Exposed surface uses dirichlet, neunman or robin boundary conditions.
     Semi-infinite solid
@@ -22,13 +22,13 @@ def cn_solver(x_grid, t_grid, upsilon, bc, bc_data, space_divisions, T_initial, 
     t_grid: temporal domain
         np.array
         
-    upsilon: Fourier number divided by 2
+    upsilon: Fourier number divided by 2 = alpha*dt/2*dx2
         float
         
     bc: boundary condition
         str
         
-    bc_data: constant surface temperature (Dirichlet), surface heat flux (neunman), h and T_gas (Robin)
+    bc_data: constant surface temperature (Dirichlet), surface heat flux (Neunman), h and T_gas (Robin)
         int or tuple    
         
     space_divisions: number of nodes in the spatial domain
@@ -94,7 +94,7 @@ def tridiag_matrix(bc, upsilon, space_divisions, bc_data, dx, k):
     space_divisions: number of nodes in the spatial domain
         int
 
-    bc_data: constant surface temperature (Dirichlet), surface heat flux (neunman), h and T_gas (Robin)
+    bc_data: constant surface temperature (Dirichlet), surface heat flux (Neunman), h and T_gas (Robin)
         int or tuple 
         
     dx = size of cell in space domain in m
@@ -123,20 +123,18 @@ def tridiag_matrix(bc, upsilon, space_divisions, bc_data, dx, k):
         A[0,0] = 1 + 2*upsilon
         A[0,1] = - 2 * upsilon
     elif bc == "Robin":
-        
         h, _ = bc_data
         A[0,0] = 1 + 2*upsilon + 2*dx*h/k
         A[0,1] = - 2 * upsilon
         
-    # adjust matrix for the boundary condition at the unexposed surface
+    # adjust matrix for the boundary condition at the unexposed surface (insulated)
     A[-1, -2] = - 2 * upsilon
     A[-1, -1] = 1 + 2 * upsilon
 
     return A
 
 
-
-#def vector_b(upsilon, space_divisions, T, BC_tuple, BC_values, dx, material, i, solving_method):
+# vector b
 def vector_b(bc, space_divisions, upsilon, T, bc_data, T_initial, dx, k):
     """
     Calculates vector b. Right hand side of linear system of equations
@@ -155,7 +153,7 @@ def vector_b(bc, space_divisions, upsilon, T, bc_data, T_initial, dx, k):
     T: array of present temperatures
         np.array
         
-    bc_data: constant surface temperature (Dirichlet), surface heat flux (neunman), h and T_gas (Robin)
+    bc_data: constant surface temperature (Dirichlet), surface heat flux (Neunman), h and T_gas (Robin)
         int or tuple
         
     T_initial: initial temperature in K
@@ -184,17 +182,14 @@ def vector_b(bc, space_divisions, upsilon, T, bc_data, T_initial, dx, k):
 
     # adjust b vector depending on the surface
     if bc == "Dirichlet":
-        
         T_surface = bc_data
         b[0] = T_surface
         
     elif bc == "Neunman":
-        
         q = bc_data
         b[0] = 2*upsilon*T[1] + (1 - 2*upsilon)*T[0] + (4*dx*q*upsilon)/(k)
         
     elif bc == "Robin":
-        
         h, T_gas = bc_data
         b[0] =  2*upsilon*T[1] + (1 - 2*upsilon - 2*dx*h/k)*T[0] + 4*dx*h*T_gas/k
     
