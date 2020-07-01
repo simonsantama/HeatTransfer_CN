@@ -14,7 +14,7 @@ import numpy as np
 import time
 
 # import 1Hz data
-with open('total_data_general_backinsualted_1Hz.pickle', 'rb') as handle:
+with open('total_data_general_backinsulated_1Hz.pickle', 'rb') as handle:
     total_data_general_1Hz = pickle.load(handle)
 
 # extract all the data from the pickle file
@@ -36,7 +36,7 @@ inset_axis_labels_fs = 9
 inset_axis_ticks_fs = 8
 y_limits = [-6, 60]
 y_limits_secondary = [-6,60]
-x_limits = [-30,300]
+x_limits = [-60,600]
 line_styles = ["-", "--", ":", "-."]
 line_color = ["firebrick", "royalblue", "seagreen", "black"] # "blueviolet"]
 line_width = 1.75
