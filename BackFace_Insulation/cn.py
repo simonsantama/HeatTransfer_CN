@@ -9,9 +9,7 @@ def general_temperatures(hf_type, T_initial, T_air, time_total, k, alpha, dx, x_
                     t_grid, upsilon, bc_surface, q, h, hc, emissivity, sigma):
     """
     General function to implement CN.
-    Creates different functions of time for the incident heat flux.
-    Returns dictionary that includes all calculated temperature for given boundary conditions evaluated at different
-    properties and parameters
+    Returns dictionary that includes all calculated temperatures for given boundary condition
     
     CN Scheme:
     ---------
@@ -54,7 +52,7 @@ def general_temperatures(hf_type, T_initial, T_air, time_total, k, alpha, dx, x_
         list
         
     upsilon: Fourier number divided by 2
-        float
+        list
         
     bc_surface: surface boundary condition (linear or non-linear)
         str
@@ -104,9 +102,6 @@ def general_temperatures(hf_type, T_initial, T_air, time_total, k, alpha, dx, x_
             T = np.zeros_like(x_grid) + T_initial
             Tn = np.zeros_like(x_grid)            
             
-            # create tridiagonal matrix A
-            A = tridiag_matrix(bc_surface, upsilon_this, space_divisions, dx, k_this, T, h, hc, emissivity, sigma)
-            
             # define the incident heat flux
             if hf_type == "Constant":
                 q_array = (np.zeros_like(t_grid_this) + heat_flux) * 1000
@@ -117,16 +112,14 @@ def general_temperatures(hf_type, T_initial, T_air, time_total, k, alpha, dx, x_
             elif hf_type == "Sinusoidal":
                 q_array = (mean + amplitude*np.sin(heat_flux*t_grid_this)) * 1000
                 
-                
-            
+            # temperature dictionary to store temperature profile at every time step
             temperatures[f"q:_{heat_flux}"][f"alpha_{alpha_this}"] = {}
     
-            
             # iterate over each time step
             for j,t in enumerate(t_grid_this[:-1]):
                 
-                if bc_surface == "Non-linear":
-                    A = tridiag_matrix(bc_surface, upsilon_this, space_divisions, dx, k_this, T, h, hc, emissivity, sigma)
+                # create tridiagonal matrix A
+                A = tridiag_matrix(bc_surface, upsilon_this, space_divisions, dx, k_this, T, h, hc, emissivity, sigma)
 
                 # create vector b
                 b = vector_b(bc_surface, upsilon_this, space_divisions, dx, k_this, T, T_initial, T_air, q_array, h, hc, 
@@ -201,7 +194,6 @@ def tridiag_matrix(bc_surface, upsilon, space_divisions, dx, k, T, h, hc, emissi
         A[0,1] = -2*upsilon
     
     elif bc_surface == "Non-linear":
-#        A[0,0] = 1 + 2*upsilon + 2*upsilon*hc*dx/k + 2*upsilon*emissivity*sigma*dx*T[0]**3
         A[0,0] = 1 + 2*upsilon + 2*dx*hc*upsilon/k+ 8*emissivity*sigma*dx*upsilon*T[0]**3/k
         A[0,1] = -2*upsilon
     
@@ -273,7 +265,7 @@ def vector_b(bc_surface, upsilon, space_divisions, dx, k, T, T_initial, T_air, q
         np.diagflat([1 - 2 * upsilon for i in range(space_divisions)]) +\
         np.diagflat([upsilon for i in range(space_divisions - 1)], 1)
 
-    # Calculate vector b
+    # Calculate vector b (matrix B dot product with present temperatures)
     b = np.zeros(space_divisions)
     b[1:-1] = B[1:-1, :].dot(T)
     

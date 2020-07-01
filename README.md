@@ -9,6 +9,7 @@ Heat diffusion in a semi-infinite solid with Dirichlet, Neunman and Robin bounda
 1. BackSurface_Insulation/:
 
 Uses CN scheme to predict the inert response of a one dimensional solid assuming an adiabatic back surface.
+Several animations are created to visualize the evolution of the temperature profiles and absorbed energy for the different conditions studied.
 
 a. Surface boundary conditions:
 

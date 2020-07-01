@@ -1,10 +1,9 @@
 """
-This script creates animations to compare the data.
+This script creates animations for data comparison.
 At every heat flux, plots data at lowest and highest thermal diffusivity to compare linear and non linear surface 
 boundary condition
 
-Must run main.py and alltemperaturedata_to_1Hzdata.py before running this script (requires the file temperatures_backinsulated_1Hz.pickle)
-
+Must run main.py 
 """
 
 # import libraries
@@ -17,7 +16,7 @@ import numpy as np
 import time
 
 # import 1Hz data
-with open('temperatures_backinsulated_1Hz.pickle', 'rb') as handle:
+with open('total_data_general_backinsulated_1Hz.pickle', 'rb') as handle:
     total_data_general_1Hz = pickle.load(handle)
 
 # extract all the data from the pickle file
@@ -255,7 +254,7 @@ for debug,level1_hftype in enumerate(Temperatures_1Hz):
     
        
     # save animation in the corresponding folder
-    file_name_animation = f"./animations_temperatureprofile/Comparisons_LinearvsNonLinear/{hf_type}_heatflux"
+    file_name_animation = f"./temperature_profiles/linear_vs_non-linear/{hf_type}_heatflux"
     anim.save(f'{file_name_animation}.mp4', dpi = 300, fps = 30)
     plt.close()
         
