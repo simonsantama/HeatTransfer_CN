@@ -6,6 +6,7 @@ Boundary conditions
 Surface: 
 a) q_inc - q _conv - q_rad (where q_inc is a function of time). Non-linear boundary condition.
 b) q_inc - q_losses (using a total heat transfer coefficient). Linear boundary condition.
+
 Unexposed: 
 a) insulated boundary
 
