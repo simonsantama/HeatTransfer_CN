@@ -238,7 +238,7 @@ def vector_b(bc_surface_type, upsilon, space_divisions, dx, k, T, T_air, heat_fl
         b[0] = 2*upsilon*T[1] + (1 - 2*upsilon - upsilon*2*dx*h/k)*T[0] + 4*upsilon*dx*h*T_air/k + \
             2*dx*upsilon/k * (heat_flux[j+1]+heat_flux[j])
     
-    elif bc_surface_type == "mon-linear":
+    elif bc_surface_type == "non-linear":
         b[0] = 2*upsilon*T[1] + (1- 2*upsilon - 2*dx*hc*upsilon/k)*T[0] + 4*dx*hc*upsilon*T_air/k + \
             4*emissivity*sigma*dx*upsilon*T[0]**4/k + 2*dx*upsilon/k * (heat_flux[j+1]+heat_flux[j])
     

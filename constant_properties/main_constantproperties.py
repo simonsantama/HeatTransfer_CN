@@ -56,6 +56,7 @@ def main_CN_constantproperties(heat_flux, surface_losses, backface_losses, time,
     
     # extract the spatial domain and create the spatial grid
     x_grid = np.linspace(0, space[0], space[1])
+    all_data["x_grid"] = x_grid
 
     # extract initial and air temperatures
     temperature_initial = temperatures_initial[0]
@@ -66,6 +67,7 @@ def main_CN_constantproperties(heat_flux, surface_losses, backface_losses, time,
     k = properties[1]
     c = properties[2]
     alpha = k/rho/c   
+    all_data["properties"] = properties
 
     # calculate the temporal grid
     dx = x_grid[1] - x_grid[0]
